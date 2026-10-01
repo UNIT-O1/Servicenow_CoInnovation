@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Support Check-in</title>
+<style>
+  :root { --ink:#1e2433; --mute:#6b7280; --line:#e6e8ee; --bg:#f3f5fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); background:var(--bg); }
+  .hero { background:linear-gradient(120deg,#4f46e5,#06b6d4); color:#fff; padding:36px 20px 72px; }
+  .hero > div, .wrap { max-width:860px; margin:0 auto; }
+  .hero h1 { margin:0; font-size:26px; } .hero p { margin:6px 0 0; opacity:.9; }
+  .wrap { padding:0 20px 64px; margin-top:-44px; }
+
+  .card { --c:#4f46e5; background:#fff; border-radius:14px; padding:22px 24px; margin-bottom:18px;
+          box-shadow:0 1px 3px rgba(20,30,60,.06),0 8px 24px rgba(20,30,60,.04); border-top:4px solid var(--c); }
+  .card h2 { margin:0 0 4px; font-size:17px; color:var(--c); }
+  .card .sub { margin:0 0 14px; color:var(--mute); font-size:13px; }
+  .q { padding:14px 0; border-top:1px solid var(--line); } .q:first-of-type { border-top:0; }
+  .q > p { margin:0 0 10px; font-weight:600; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opts label { cursor:pointer; }
+  .opts input { position:absolute; opacity:0; pointer-events:none; }
+  .opts span { display:block; padding:8px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fafbfd; font-size:14px; transition:.12s; }
+  .opts label:hover span { border-color:var(--c); }
+  .opts input:checked + span { background:var(--c); border-color:var(--c); color:#fff; font-weight:600; }
+  .opts input:focus-visible + span { outline:2px solid var(--c); outline-offset:2px; }
+  textarea { width:100%; min-height:64px; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; font:inherit; resize:vertical; }
+  textarea:focus { outline:none; border-color:var(--c); }
+
+  .chips { display:flex; flex-wrap:wrap; gap:10px; }
+  .chip { background:#eef2ff; border-radius:10px; padding:8px 14px; font-size:13px; color:var(--mute); }
+  .chip b { display:block; color:var(--ink); font-size:15px; }
+  .who { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .av { width:34px; height:34px; border-radius:50%; background:var(--c); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .who h2 { margin:0; } .who small { color:var(--mute); text-transform:uppercase; letter-spacing:.06em; font-size:11px; }
+
+  .part { margin:28px 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--mute); }
+  .actions { display:flex; gap:10px; align-items:center; }
+  button { font:inherit; padding:12px 26px; border-radius:10px; border:0; background:linear-gradient(120deg,#4f46e5,#06b6d4); color:#fff; font-weight:600; cursor:pointer; }
+  button.ghost { background:#fff; color:#4f46e5; border:1.5px solid #c7d2fe; }
+  button:disabled { opacity:.6; cursor:wait; }
+  #err { color:#b91c1c; margin-top:12px; }
+
+  #result { display:none; --c:#0f172a; }
+  .meta { display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:8px 0 12px; font-size:13px; color:var(--mute); }
+  .badge { padding:4px 14px; border-radius:99px; font-weight:700; font-size:13px; color:#fff; }
+  .LOW{background:#16a34a} .MODERATE{background:#d97706} .HIGH{background:#dc2626} .CRITICAL{background:#7f1d1d}
+  .scores { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; font-size:12px; color:var(--mute); margin:14px 0; }
+  .bar { height:6px; background:var(--line); border-radius:3px; margin-top:4px; } .bar i { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,#4f46e5,#06b6d4); }
+  .h { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:20px 0 6px; }
+  .route { display:flex; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
+  .route .n { width:26px; height:26px; border-radius:50%; background:#4f46e5; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; flex:none; }
+  .route b { display:block; } .route span { color:var(--mute); font-size:13px; }
+  ul { margin:0; padding-left:18px; color:var(--mute); font-size:13px; }
+  @media (max-width:640px){ .scores{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="hero"><div>
+  <h1>Student Support Check-in</h1>
+  <p>Confidential. Choose the answer that fits best for each question.</p>
+</div></div>
+
+<div class="wrap">
+  <form id="form">
+    <div class="card">
+      <h2>Your details</h2>
+      <p class="sub">Already on file.</p>
+      <div class="chips" id="student"></div>
+    </div>
+    <div id="sections"></div>
+    <div id="peers"></div>
+    <div class="actions">
+      <button type="submit" id="go">Submit check-in</button>
+      <button type="button" class="ghost" id="demo">Fill demo data</button>
+    </div>
+    <div id="err"></div>
+  </form>
+
+  <div class="card" id="result" style="margin-top:28px">
+    <h2>Triage result</h2>
+    <div class="meta"><span class="badge" id="risk"></span><span id="urg"></span><span id="conf"></span></div>
+    <p id="summary" style="margin:0"></p>
+    <div class="scores" id="scores"></div>
+    <div class="h">Routed to</div><div id="routing"></div>
+    <div class="h">Key signals</div><ul id="signals"></ul>
+    <div class="h">Peer corroboration</div><p id="corro" style="margin:0;color:var(--mute);font-size:13px"></p>
+    <div class="h">Suggested first step</div><p id="step" style="margin:0"></p>
+  </div>
+</div>
+
+<script>
+const STUDENT = { name:"Rahul", studentId:"STU1024", department:"CSE", year:3 };
+const pretty = v => v.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+const $ = id => document.getElementById(id);
+const SCALE = ["as_usual","somewhat_less","less_than_usual","much_less"];
+const FREQ = ["never","sometimes","often","always"];
+// Option label overrides (everything else is auto-prettified)
+const LAB = { yes_strong:"Yes, a strong network", none:"No one", easy_to_manage:"Easy to manage", same_or_better:"Same or better",
+  as_usual:"As usual", somewhat_less:"Somewhat less", much_less:"Much less", slightly_below:"Slightly below usual", much_below:"Much below usual",
+  no:"No", yes:"Yes", as_soon_as_possible:"As soon as possible", no_rush:"No rush", this_week:"This week" };
+
+// [section key, title, subtitle, colour, questions]
+const SECTIONS = [
+  ["academic","Academic","Your studies recently","#2563eb",[
+    ["workload","How difficult has your academic workload been?",["manageable","somewhat_difficult","difficult","very_difficult"]],
+    ["coursework","How much coursework have you been completing compared to usual?",SCALE],
+    ["performance","How would you rate your academic performance compared to usual?",["as_usual","slightly_below","below_usual","much_below"]],
+    ["concentration","How often have you had trouble concentrating on your studies?",FREQ]]],
+  ["financial","Financial","Money and your studies","#d97706",[
+    ["responsibilities","How easy is it to manage your financial responsibilities?",["easy_to_manage","manageable","difficult_to_manage","very_difficult"]],
+    ["impact","How often have finances affected your studies?",FREQ],
+    ["essentialExpenses","How concerned are you about covering essential expenses?",["not_concerned","slightly_concerned","quite_concerned","very_concerned"]]]],
+  ["wellbeing","Wellbeing","How you have been feeling","#e11d48",[
+    ["feeling","How have you been feeling lately?",["good","okay","quite_low","very_low"]],
+    ["stress","How would you rate your stress level?",["low","moderate","high","very_high"]],
+    ["overwhelmed","How often do you feel overwhelmed?",FREQ],
+    ["sleep","How has your sleep been compared to usual?",["same_or_better","somewhat_worse","much_worse"]]]],
+  ["social","Social","Connection with others","#0d9488",[
+    ["connectedness","How connected do you feel to the people around you?",["well_connected","somewhat_disconnected","very_disconnected"]],
+    ["interaction","How much have you been interacting with others compared to usual?",SCALE],
+    ["supportNetwork","Do you have people you can rely on for support?",["yes_strong","somewhat","not_really","none"]]]],
+  ["dailyRoutine","Daily routine","Day-to-day life","#7c3aed",[
+    ["routine","How has your daily routine been?",["stable","somewhat_disrupted","very_disrupted"]],
+    ["missedCommitments","How often have you missed commitments?",FREQ],
+    ["motivation","How is your motivation compared to usual?",SCALE]]],
+  ["support","Support","What would help","#16a34a",[
+    ["previousHelp","Have you sought support before?",["no","yes"]],
+    ["desiredSupport","What kind of support would help you most?",["none","academic","financial","wellbeing","social"]],
+    ["contactPreference","When would you like to be contacted?",["no_rush","this_week","as_soon_as_possible"]]]],
+];
+
+const radios = (name, opts) => `<div class="opts">${opts.map(o => {
+  const [v, l] = Array.isArray(o) ? o : [o, LAB[o] || pretty(o)];
+  return `<label><input type="radio" name="${name}" value="${v}" required><span>${l}</span></label>`; }).join("")}</div>`;
+
+$("student").innerHTML = [["Name",STUDENT.name],["Student ID",STUDENT.studentId],["Department",STUDENT.department],["Year",STUDENT.year]]
+  .map(([k,v]) => `<div class="chip">${k}<b>${v}</b></div>`).join("");
+
+$("sections").innerHTML = SECTIONS.map(([sec, title, sub, col, qs]) =>
+  `<div class="card" style="--c:${col}"><h2>${title}</h2><p class="sub">${sub}</p>` +
+  qs.map(([k, text, opts]) => `<div class="q"><p>${text}</p>${radios(sec + "." + k, opts)}</div>`).join("") + `</div>`).join("");
+
+// Peers Rahul answers about (names are pre-set): 1 friend, 2 classmates, 1 clubmate
+const PEERS = [
+  { type:"normal_friend", name:"Rohan", label:"Friend" },
+  { type:"classmate", name:"Ananya", label:"Classmate" },
+  { type:"classmate", name:"Karan", label:"Classmate" },
+  { type:"clubmate", name:"Meera", label:"Clubmate" },
+];
+const PEER_COLORS = ["#4f46e5","#0891b2","#c026d3","#ea580c"];
+const OBS_FIRST = [["seems_normal","Seems like their usual self"],["less_involved","Less involved than usual"],["seems_stressed","Seems stressed / withdrawn"]];
+const OBS_CHANGE = [["nothing_noticeable","Nothing in particular"],["participating_less","Showing up or participating less"],["more_distracted","More distracted than usual"]];
+$("peers").innerHTML = `<h3 class="part">Peer observation</h3>` + PEERS.map((p, i) => {
+  const n = "peer" + i, s = STUDENT.name;
+  const where = p.type === "clubmate" ? "in the club" : p.type === "classmate" ? "in class" : "lately";
+  return `<div class="card" style="--c:${PEER_COLORS[i]}">
+    <div class="who"><div class="av">${p.name[0]}</div><div><h2>Name ${i + 1}: ${p.name}</h2><small>${p.label}</small></div></div>
+    <div class="q"><p>How would you describe how ${s} has been ${where}?</p>${radios(n + ".description", OBS_FIRST)}</div>
+    <div class="q"><p>Have you noticed anything different about ${s} recently?</p>${radios(n + ".recentChange", OBS_CHANGE)}</div>
+    <div class="q"><p>Anything you've noticed? (optional)</p><textarea name="${n}.observation" placeholder="Type anything here..."></textarea></div>
+  </div>`; }).join("");
+
+const DEMO = {
+  "peer0.description":"less_involved","peer0.recentChange":"participating_less","peer0.observation":"Has been avoiding hangouts and social plans, and replies to messages late or not at all.",
+  "peer1.description":"less_involved","peer1.recentChange":"participating_less","peer1.observation":"Much quieter in class over the last few weeks and rarely joins group discussions anymore.",
+  "peer2.description":"seems_stressed","peer2.recentChange":"more_distracted","peer2.observation":"Seems distracted during lectures and has missed a few assignment deadlines.",
+  "peer3.description":"seems_stressed","peer3.recentChange":"participating_less","peer3.observation":"Attending club activities less often and looks tired when Rahul does show up.",
+  "academic.workload":"very_difficult","academic.coursework":"less_than_usual","academic.performance":"below_usual","academic.concentration":"often",
+  "financial.responsibilities":"difficult_to_manage","financial.impact":"often","financial.essentialExpenses":"quite_concerned",
+  "wellbeing.feeling":"quite_low","wellbeing.stress":"very_high","wellbeing.overwhelmed":"often","wellbeing.sleep":"somewhat_worse",
+  "social.connectedness":"somewhat_disconnected","social.interaction":"less_than_usual","social.supportNetwork":"not_really",
+  "dailyRoutine.routine":"somewhat_disrupted","dailyRoutine.missedCommitments":"often","dailyRoutine.motivation":"less_than_usual",
+  "support.previousHelp":"no","support.desiredSupport":"wellbeing","support.contactPreference":"as_soon_as_possible",
+};
+$("demo").onclick = () => { for (const [k, v] of Object.entries(DEMO)) {
+  const el = document.querySelector(`[name="${k}"][value="${v}"]`) || document.querySelector(`textarea[name="${k}"]`);
+  if (el.tagName === "TEXTAREA") el.value = v; else el.checked = true; } };
+
+$("form").onsubmit = async e => {
+  e.preventDefault(); $("err").textContent = ""; $("go").disabled = true; $("go").textContent = "Analysing...";
+  const data = {}, f = new FormData(e.target);
+  for (const [name, value] of f) { const [s, k] = name.split("."); if (!s.startsWith("peer")) (data[s] ??= {})[k] = value; }
+  data.friends = PEERS.map((p, i) => ({ type:p.type, name:p.name, description:f.get(`peer${i}.description`),
+    recentChange:f.get(`peer${i}.recentChange`), observation:f.get(`peer${i}.observation`) || "" }));
+  try {
+    const r = await fetch("/api/assess", { method:"POST", body:JSON.stringify(data) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    show(j);
+  } catch (x) { $("err").textContent = x.message; }
+  $("go").disabled = false; $("go").textContent = "Submit check-in";
+};
+
+function show(j) {
+  $("result").style.display = "block";
+  $("risk").textContent = j.riskLevel + " RISK"; $("risk").className = "badge " + j.riskLevel;
+  $("urg").textContent = "Urgency: " + j.urgency; $("conf").textContent = "Confidence: " + (j.confidence || "").toLowerCase();
+  $("summary").textContent = j.summaryForStaff;
+  $("scores").innerHTML = Object.entries(j.domainScores || {}).map(([k, v]) =>
+    `<div>${pretty(k.replace(/([A-Z])/g, " $1").toLowerCase())} <b style="color:var(--ink)">${v}/10</b><div class="bar"><i style="width:${v * 10}%"></i></div></div>`).join("");
+  $("routing").innerHTML = (j.routing || []).map(r =>
+    `<div class="route"><div class="n">${r.priority}</div><div><b>${pretty(r.department.toLowerCase())}</b><span>${r.reason}</span></div></div>`).join("");
+  $("signals").innerHTML = (j.keySignals || []).map(s => `<li>${s}</li>`).join("");
+  $("corro").textContent = j.peerCorroboration; $("step").textContent = j.suggestedFirstStep;
+  $("result").scrollIntoView({ behavior:"smooth" });
+}
+</script>
+</body>
+</html>

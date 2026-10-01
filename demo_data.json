@@ -1,0 +1,39 @@
+{
+  "student": {
+    "name": "Rahul",
+    "studentId": "STU1024",
+    "department": "CSE",
+    "year": 3
+  },
+
+  "friends": [
+    {
+      "type": "classmate",
+      "name": "Ananya",
+      "description": "less_involved",
+      "recentChange": "participating_less",
+      "observation": "Rahul has been much quieter in class over the last few weeks and rarely joins group discussions anymore."
+    },
+    {
+      "type": "classmate",
+      "name": "Karan",
+      "description": "seems_stressed",
+      "recentChange": "more_distracted",
+      "observation": "He seems distracted during lectures and has missed a few assignment deadlines, which is not like Rahul."
+    },
+    {
+      "type": "normal_friend",
+      "name": "Rohan",
+      "description": "less_involved",
+      "recentChange": "participating_less",
+      "observation": "Has been avoiding hangouts and social plans, and replies to messages late or not at all."
+    },
+    {
+      "type": "clubmate",
+      "name": "Meera",
+      "description": "seems_stressed",
+      "recentChange": "participating_less",
+      "observation": "Has been attending club activities less often and looks tired when Rahul does show up."
+    }
+  ]
+}
